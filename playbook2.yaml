@@ -1,0 +1,9 @@
+---
+- name: Configure DevOps tools
+  hosts: node1
+  become: yes
+  roles:
+    - docker
+    - kubectl
+    - jenkins
+
