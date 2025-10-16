@@ -1,0 +1,37 @@
+---
+- name: Remove Podman and related container tools
+  ansible.builtin.command: >
+    yum remove -y podman buildah runc
+  become: yes
+
+- name: Install required dependencies
+  ansible.builtin.command: >
+    yum install -y yum-utils device-mapper-persistent-data lvm2
+  become: yes
+
+- name: Add Docker repository
+  ansible.builtin.command: >
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+  become: yes
+
+- name: Install Docker Engine and CLI
+  ansible.builtin.command: >
+    yum install -y docker-ce docker-ce-cli containerd.io
+  become: yes
+
+- name: Enable and start Docker service
+  ansible.builtin.command: systemctl enable --now docker
+  become: yes
+
+- name: Verify Docker installation
+  ansible.builtin.command: docker --version
+  register: docker_version
+  changed_when: false
+  become: yes
+
+- name: Display Docker version
+  ansible.builtin.debug:
+    msg: "Installed Docker version: {{ docker_version.stdout }}"
+
