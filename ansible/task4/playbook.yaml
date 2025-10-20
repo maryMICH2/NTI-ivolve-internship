@@ -1,0 +1,40 @@
+- name: Setup MySQL and iVolve DB (command-based)
+  hosts: node1
+  become: yes
+  vars_files:
+    - vault.yaml
+
+  tasks:
+    - name: Install MySQL server
+      ansible.builtin.command: yum install -y @mysql
+      become: yes
+
+    - name: Start MySQL service
+      ansible.builtin.command: systemctl enable --now mysqld
+      become: yes
+
+    - name: Create iVolve database
+      ansible.builtin.command: >
+        mysql -u root -e "CREATE DATABASE IF NOT EXISTS iVolve;"
+      become: yes
+
+    - name: Create MySQL user 'ali'
+      ansible.builtin.command: >
+        mysql -u root -e
+        "CREATE USER IF NOT EXISTS 'ali'@'localhost' IDENTIFIED BY '{{ mysql_user_password }}';"
+      become: yes
+
+    - name: Grant privileges to MySQL user 'ali'
+      ansible.builtin.command: >
+        mysql -u root -e
+        "GRANT ALL PRIVILEGES ON iVolve.* TO 'ali'@'localhost' WITH GRANT OPTION;"
+      become: yes
+
+    - name: Validate DB by listing databases as ali
+      ansible.builtin.shell: "mysql -u ali -p{{ mysql_user_password }} -e 'SHOW DATABASES;'"
+      register: db_list
+
+    - name: Show databases
+      ansible.builtin.debug:
+        var: db_list.stdout_lines
+

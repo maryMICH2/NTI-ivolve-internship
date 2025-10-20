@@ -1,0 +1,23 @@
+---
+- name: Test Ansible on Ec2 ivolve-taged
+  hosts: tag_ivolve
+  become: true
+  tasks:
+    - name: ping test
+      ansible.builtin.ping:
+    - name: install Apache
+      ansible.builtin.yum:
+         name: httpd
+         state: present 
+    
+    - name: Start Apache service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true  
+    
+    - name: Create index page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <h1>Hello from the EC2 instance managed by Ansible!</h1>
