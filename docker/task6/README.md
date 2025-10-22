@@ -123,7 +123,7 @@ docker network rm ivolve-network
 ## Screenshots
 
 * ivolve-network (Subnet & Gateway)![ivolve-network](images/ivolve-network.png)
-* Check-the-app![Check-the-app](images/.check-the-app.png)
+* Check-the-app![Check-the-app](images/check-the-app.png)
 * Ping-from-frontend1-container![ping-the-backend](images/ping-the-backend.png)
 * The-different-networks-of-each-container![the-different-network](images/the-different-network.png)
 
