@@ -23,7 +23,7 @@ docker volume inspect nginx_logs
 ```
 
 Screenshot: **mountpoint-for-the-created-volume**
-[mountpoint](images/mountpoint-for-the-created-volume.png)
+![mountpoint](images/mountpoint-for-the-created-volume.png)
 
 ---
 
@@ -42,7 +42,7 @@ echo "Hello from Bind Mount" > nginx-bind/html/index.html
 ```
 
 Screenshot: **html-outside-the-container**
-[html-outside-the-container](images/html-outside-the-container.png)
+![html-outside-the-container](images/html-outside-the-container.png)
 
 ---
 
@@ -64,7 +64,7 @@ docker ps
 ```
 
 Screenshot: **html-inside-the-container**
-[html-inside-the-container](images/html-inside-the-container.png)
+![html-inside-the-container](images/html-inside-the-container.png)
 ---
 
 ### 4. Test the Application
@@ -92,7 +92,7 @@ echo "Updated text: Hello from NTI task!" > nginx-bind/html/index.html
 ```
 
 Screenshot: **updated-html-outside**
-[updated-html-outside-the-container](images/updated-html-outside.png)
+![updated-html-outside-the-container](images/updated-html-outside.png)
 Then, test again:
 
 ```bash
@@ -102,7 +102,7 @@ curl localhost:8080
 You should now see the updated text.
 
 Screenshot: **updated-html-inside**
-[updated-html-inside-the-container](images/updated-html-inside.png)
+![updated-html-inside-the-container](images/updated-html-inside.png)
 ---
 
 ### 6. Verify Logs
