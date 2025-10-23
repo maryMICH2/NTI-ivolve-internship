@@ -113,7 +113,7 @@ SHOW DATABASES;
  You should see a database named **ivolve**.
 
 Screenshot:
-`images/check-database-inside-mysql-db-container.png`
+![check-database-inside-mysql-db-container](images/check-database-inside-mysql-db-container.png) 
 
 ---
 
@@ -126,7 +126,7 @@ docker logs node-app-container
 ```
 
  Screenshot:
-`images/app-output.png`
+![app-output](images/app-output.png) 
 
 ---
 
@@ -139,8 +139,8 @@ Visit the following endpoints in your browser:
 
 Screenshots:
 
-* `images/health-check.png`
-* `images/readiness-check.png`
+* ![health-check](images/health-check.png) 
+* ![readiness-check](images/readiness-check.png) 
 
 ---
 
@@ -164,7 +164,7 @@ cat <some-log-file>.log
 ```
 
  Screenshot:
-`images/logs-of-node-app-container.png`
+![logs-of-node-app-container](images/logs-of-node-app-container.png)
 
 ---
 
@@ -204,14 +204,6 @@ docker compose down -v
 
 ---
 
-## Screenshots
 
-* `images/check-database-inside-mysql-db-container.png`
-* `images/app-output.png`
-* `images/health-check.png`
-* `images/readiness-check.png`
-* `images/logs-of-node-app-container.png`
-
----
 
 
