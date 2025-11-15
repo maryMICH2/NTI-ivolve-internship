@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nodejs
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "worker"
+          effect: "NoSchedule"
+
+      initContainers:
+        - name: db-init
+          image: mysql:5.7
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MySQL to become available..."
+              until mysqladmin ping -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" --silent; do
+              echo "MySQL not ready. Retrying..."
+              sleep 3
+              done
+              echo "MySQL is ready. Creating database and user..."
+              mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" <<EOF
+              CREATE DATABASE IF NOT EXISTS ivolve;
+              CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY '$DB_PASSWORD';
+              GRANT ALL PRIVILEGES ON ivolve.* TO 'appuser'@'%';
+              FLUSH PRIVILEGES;
+              EOF
+              echo "Database and user created successfully!"
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config-map
+                  key: DB_HOST
+            - name: DB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASSWORD
+
+      containers:
+        - name: nodejs-pod
+          image: maaryii/app-image:v2
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: mysql-config-map
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: app-logs
+              mountPath: /var/log/app
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+      volumes:
+        - name: app-logs
+          persistentVolumeClaim:
+            claimName: pvc-logs
+
