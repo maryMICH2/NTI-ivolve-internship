@@ -48,16 +48,16 @@ spec:
             - |
               echo "Waiting for MySQL to become available..."
               until mysqladmin ping -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" --silent; do
-                echo "MySQL not ready. Retrying..."
-                sleep 3
+              echo "MySQL not ready. Retrying..."
+              sleep 3
               done
               echo "MySQL is ready. Creating database and user..."
               mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" <<EOF
-CREATE DATABASE IF NOT EXISTS ivolve;
-CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY '$DB_PASSWORD';
-GRANT ALL PRIVILEGES ON ivolve.* TO 'appuser'@'%';
-FLUSH PRIVILEGES;
-EOF
+              CREATE DATABASE IF NOT EXISTS ivolve;
+              CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY '$DB_PASSWORD';
+              GRANT ALL PRIVILEGES ON ivolve.* TO 'appuser'@'%';
+              FLUSH PRIVILEGES;
+              EOF
               echo "Database and user created successfully!"
           env:
             - name: DB_HOST
