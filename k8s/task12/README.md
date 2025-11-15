@@ -21,6 +21,8 @@ kubectl create namespace monitoring
 ### 2. Deploy Node Exporter DaemonSet
 
 `node-exporter-daemonset.yaml`:
+
+```yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -43,7 +45,6 @@ spec:
           ports:
             - containerPort: 9100
               name: metrics
-
 ```
 
 Apply the DaemonSet:
@@ -106,5 +107,6 @@ promhttp_metric_handler_requests_total{code="500"} 0
 * The **DaemonSet** ensures a node-exporter pod runs on every node.
 * Tolerations allow scheduling on tainted nodes.
 * Metrics are exposed on **port 9100** and can be scraped by Prometheus.
-* Sample metrics include network, memory, file descriptors, and process stats.
-* Setup is fully functional in CodeKeller w
+* Sample metrics include network traffic, memory usage, open file descriptors, process stats, and HTTP handler metrics.
+* Setup is fully functional in CodeKeller without Helm.
+
