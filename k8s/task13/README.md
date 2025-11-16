@@ -46,7 +46,6 @@ Apply the Role:
 ```bash
 kubectl apply -f role-pod-reader.yaml
 ```
-![before-binding](images/before-binding.png)
 
 ### 3. Create RoleBinding
 
@@ -73,7 +72,7 @@ Apply the RoleBinding:
 ```bash
 kubectl apply -f rolebinding-jenkins-sa.yaml
 ```
-![describe-rolebindong](images/describe-rolebindong.png)
+![describe-rolebinding](images/describe-rolebinding.png)
 ### 4. Retrieve Service Account Token
 
 ```bash
