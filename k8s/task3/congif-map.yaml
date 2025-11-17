@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: mysql-config-map
 data:
-  DB_HOST: mysql-service
+  DB_HOST: mysql
   DB_USER: appuser
