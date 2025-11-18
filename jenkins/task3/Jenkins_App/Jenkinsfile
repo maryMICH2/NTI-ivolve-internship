@@ -74,7 +74,6 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'jenkins-sa-credential', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
-                        # Use KUBECONFIG directly to avoid interpolation warnings
                         KUBECONFIG="$KUBECONFIG_FILE" kubectl apply -f jenkins/task3/Jenkins_App/k8s/deployment.yaml
                     '''
                 }
