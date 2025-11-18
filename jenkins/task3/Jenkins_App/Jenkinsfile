@@ -2,10 +2,16 @@ pipeline {
     agent any
 
     environment {
+        // --- Application Path ---
+        // Path relative to the workspace root where the source code and Dockerfile are located.
+        APP_DIR = 'jenkins/task3/Jenkins_App/src/main/java/com/example
+/demo/DemoApplication.java'
+
         // --- Credentials and File Paths ---
         DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'
         KUBE_CONFIG_CREDENTIAL_ID = 'jenkins-sa-credential'
-        DEPLOYMENT_FILE = 'k8s/deployment.yaml'
+        // The deployment.yaml path is relative to the workspace root.
+        DEPLOYMENT_FILE = "${env.APP_DIR}/k8s/deployment.yaml" 
 
         // --- Dynamic Image Tagging ---
         DOCKER_USER_IMAGE = 'maaryii/test-image' 
@@ -14,19 +20,23 @@ pipeline {
     }
 
     stages {
-        // Stage 1: Run Unit Test
+        // Stage 1: Run Unit Test - Executed inside the application directory
         stage('Run Unit Tests') {
             steps {
-                sh 'npm install'
-                sh 'npm test'
+                dir(env.APP_DIR) { 
+                    sh 'npm install'
+                    sh 'npm test'
+                }
             }
         }
 
-        // Stage 2: Build App (Placeholder)
+        // Stage 2: Build App - Executed inside the application directory
         stage('Build App') {
             steps {
-                // Add your application build command here, e.g., sh 'npm run build'
-                echo 'Application build step executed.'
+                dir(env.APP_DIR) {
+                    // Placeholder for the application build command (e.g., if needed for production builds)
+                    echo 'Application build step executed.' 
+                }
             }
         }
 
@@ -34,8 +44,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build and tag the image using the unique tag
-                    docker.build(env.FULL_DOCKER_IMAGE)
+                    // Use the application directory as the build context.
+                    // The Dockerfile path is relative to the context (which is the workspace root).
+                    docker.build(env.FULL_DOCKER_IMAGE, "-f ${env.APP_DIR}/Dockerfile ${env.APP_DIR}")
                 }
             }
         }
@@ -66,6 +77,7 @@ pipeline {
             steps {
                 sh """
                     # Use sed to replace the old image tag with the new, unique tag
+                    # The DEPLOYMENT_FILE variable now includes the full path.
                     sed -i "s|image: ${env.DOCKER_USER_IMAGE}:.*|image: ${env.FULL_DOCKER_IMAGE}|g" ${env.DEPLOYMENT_FILE}
                     echo "Updated image in ${env.DEPLOYMENT_FILE} to ${env.FULL_DOCKER_IMAGE}"
                 """
@@ -85,7 +97,7 @@ pipeline {
         }
     }
 
-    // Set pipeline post action (always, success, failure)
+    // Post Actions
     post {
         always {
             echo 'Pipeline completed. Finalizing run details.'
