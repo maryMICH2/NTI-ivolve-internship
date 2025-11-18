@@ -50,7 +50,7 @@ pipeline {
         // Stage 5: Push Docker Image to Docker Hub
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'Docker-Hub-Credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-credential', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push "$JD_IMAGE"
