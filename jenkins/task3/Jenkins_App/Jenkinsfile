@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('Docker-Hub-Credentials')
+        KUBECONFIG = 'jenkins-sa-kubeconfig.yaml'
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git 'https://github.com/maryMICH2/NTI-ivolve-internship/tree/main/jenkins/task3/Jenkins_App'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                sh 'npm install && npm test'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t maaryii/test-image:latest .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
+                sh 'docker push maaryii/test-image:latest'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh 'kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml'
+            }
+        }
+    }
+
+    post {
+        always { echo 'Pipeline finished.' }
+        success { echo 'Pipeline succeeded!' }
+        failure { echo 'Pipeline failed!' }
+    }
+}
+
