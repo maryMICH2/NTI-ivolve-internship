@@ -2,97 +2,74 @@ pipeline {
     agent any
 
     environment {
-        // App root directory (where pom.xml is located)
-        APP_DIR = 'jenkins/task3/Jenkins_App'
-
-        // Credentials
-        DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'
-        KUBE_CONFIG_CREDENTIAL_ID = 'jenkins-sa-credential'
-
-        // K8s deployment file
-        DEPLOYMENT_FILE = "${env.APP_DIR}/k8s/deployment.yaml"
-
-        // Docker image info
-        DOCKER_USER_IMAGE = 'maaryii/test-image'
-        NEW_IMAGE_TAG = "build-${env.BUILD_NUMBER}"
-        FULL_DOCKER_IMAGE = "${env.DOCKER_USER_IMAGE}:${env.NEW_IMAGE_TAG}"
+        REGISTRY = "maaryii"
+        IMAGE_NAME = "test-image"
     }
 
     stages {
 
-        // Stage 1: Build & Test Java App
-        stage('Build & Test App') {
+        stage('Checkout') {
             steps {
-                dir(env.APP_DIR) {
-                    sh 'mvn -B -DskipTests=false clean test'
-                    sh 'mvn -B -DskipTests package'
-                }
+                checkout scm
             }
         }
 
-        // Stage 2: Build Docker image
+        stage('Build Maven Project') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build(env.FULL_DOCKER_IMAGE, "-f ${env.APP_DIR}/Dockerfile ${env.APP_DIR}")
+                    def buildTag = "build-${BUILD_NUMBER}"
+                    env.JD_IMAGE = "${REGISTRY}/${IMAGE_NAME}:${buildTag}"
+
+                    sh """
+                        docker build -t ${JD_IMAGE} -f jenkins/task3/Jenkins_App/Dockerfile jenkins/task3/Jenkins_App
+                    """
                 }
             }
         }
 
-        // Stage 3: Push image
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIALS_ID,
-                                                 usernameVariable: 'DOCKER_USER',
-                                                 passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${env.FULL_DOCKER_IMAGE}
-                    """
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push "$JD_IMAGE"
+                    '''
                 }
             }
         }
 
-        // Stage 4: Delete local image
-        stage('Delete Image Locally') {
-            steps {
-                sh "docker rmi ${env.FULL_DOCKER_IMAGE}"
-            }
-        }
-
-        // Stage 5: Update deployment.yaml
         stage('Update Deployment Image') {
             steps {
-                sh """
-                    sed -i "s|image: ${env.DOCKER_USER_IMAGE}:.*|image: ${env.FULL_DOCKER_IMAGE}|g" ${env.DEPLOYMENT_FILE}
-                    echo "Updated deployment file with ${env.FULL_DOCKER_IMAGE}"
-                """
+                sh '''
+                    sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${JD_IMAGE}|g" jenkins/task3/Jenkins_App/k8s/deployment.yaml
+                    echo "Updated deployment.yaml to use image ${JD_IMAGE}"
+                '''
             }
         }
 
-        // Stage 6: Deploy to Kubernetes
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: env.KUBE_CONFIG_CREDENTIAL_ID,
-                                      variable: 'KUBECONFIG_FILE')]) {
-                    sh """
-                        export KUBECONFIG=$KUBECONFIG_FILE
-                        kubectl apply -f ${env.DEPLOYMENT_FILE}
-                    """
+                withCredentials([file(credentialsId: 'kubeconfig-cred-id', variable: 'KUBECONFIG_FILE')]) {
+                    sh '''
+                        KUBECONFIG="$KUBECONFIG_FILE" kubectl apply -f jenkins/task3/Jenkins_App/k8s/deployment.yaml
+                    '''
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline completed.'
-        }
         success {
-            echo '✅ SUCCESS: Application deployed.'
+            echo "Pipeline completed successfully."
         }
         failure {
-            echo '❌ FAILED: Check the logs.'
+            echo "❌ FAILED: Check the logs."
         }
     }
 }
