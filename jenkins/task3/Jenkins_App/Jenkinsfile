@@ -8,69 +8,25 @@ pipeline {
 
     stages {
 
+        // Stage 1: Checkout SCM
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
+        // Stage 2: Build Maven Project
         stage('Build Maven Project') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                // Run Maven inside project directory where pom.xml exists
+                dir('jenkins/task3/Jenkins_App') {
+                    sh 'mvn clean package -DskipTests'
+                }
             }
         }
 
+        // Stage 3: Build Docker Image
         stage('Build Docker Image') {
             steps {
                 script {
-                    def buildTag = "build-${BUILD_NUMBER}"
-                    env.JD_IMAGE = "${REGISTRY}/${IMAGE_NAME}:${buildTag}"
-
-                    sh """
-                        docker build -t ${JD_IMAGE} -f jenkins/task3/Jenkins_App/Dockerfile jenkins/task3/Jenkins_App
-                    """
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push "$JD_IMAGE"
-                    '''
-                }
-            }
-        }
-
-        stage('Update Deployment Image') {
-            steps {
-                sh '''
-                    sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${JD_IMAGE}|g" jenkins/task3/Jenkins_App/k8s/deployment.yaml
-                    echo "Updated deployment.yaml to use image ${JD_IMAGE}"
-                '''
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'kubeconfig-cred-id', variable: 'KUBECONFIG_FILE')]) {
-                    sh '''
-                        KUBECONFIG="$KUBECONFIG_FILE" kubectl apply -f jenkins/task3/Jenkins_App/k8s/deployment.yaml
-                    '''
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Pipeline completed successfully."
-        }
-        failure {
-            echo "❌ FAILED: Check the logs."
-        }
-    }
-}
 
