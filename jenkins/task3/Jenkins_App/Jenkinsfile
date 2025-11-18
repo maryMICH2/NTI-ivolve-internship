@@ -2,12 +2,19 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'           
-        KUBE_CONFIG_CREDENTIAL_ID = 'jenkins-sa-credential' 
-        DOCKER_IMAGE = 'maaryii/test-image:latest'
+        // --- Credentials and File Paths ---
+        DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'
+        KUBE_CONFIG_CREDENTIAL_ID = 'jenkins-sa-credential'
         DEPLOYMENT_FILE = 'k8s/deployment.yaml'
+
+        // --- Dynamic Image Tagging ---
+        DOCKER_USER_IMAGE = 'maaryii/test-image' 
+        NEW_IMAGE_TAG = "build-${env.BUILD_NUMBER}"
+        FULL_DOCKER_IMAGE = "${env.DOCKER_USER_IMAGE}:${env.NEW_IMAGE_TAG}"
     }
 
+    stages {
+        // Stage 1: Run Unit Test
         stage('Run Unit Tests') {
             steps {
                 sh 'npm install'
@@ -15,14 +22,25 @@ pipeline {
             }
         }
 
+        // Stage 2: Build App (Placeholder)
+        stage('Build App') {
+            steps {
+                // Add your application build command here, e.g., sh 'npm run build'
+                echo 'Application build step executed.'
+            }
+        }
+
+        // Stage 3: Build Docker image from Dockerfile
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build(DOCKER_IMAGE)
+                    // Build and tag the image using the unique tag
+                    docker.build(env.FULL_DOCKER_IMAGE)
                 }
             }
         }
 
+        // Stage 4: Push image to Docker hub
         stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIALS_ID,
@@ -30,35 +48,53 @@ pipeline {
                                                  passwordVariable: 'DOCKER_PASS')]) {
                     sh """
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $DOCKER_IMAGE
-                        docker rmi $DOCKER_IMAGE
+                        docker push ${env.FULL_DOCKER_IMAGE}
                     """
                 }
             }
         }
+        
+        // Stage 5: Delete image locally
+        stage('Delete Image Locally') {
+            steps {
+                sh "docker rmi ${env.FULL_DOCKER_IMAGE}"
+            }
+        }
 
+        // Stage 6: Edit new image in deployment.yaml file
+        stage('Update Deployment Image') {
+            steps {
+                sh """
+                    # Use sed to replace the old image tag with the new, unique tag
+                    sed -i "s|image: ${env.DOCKER_USER_IMAGE}:.*|image: ${env.FULL_DOCKER_IMAGE}|g" ${env.DEPLOYMENT_FILE}
+                    echo "Updated image in ${env.DEPLOYMENT_FILE} to ${env.FULL_DOCKER_IMAGE}"
+                """
+            }
+        }
+
+        // Stage 7: Deploy to k8s cluster
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: env.KUBE_CONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG_FILE')]) {
                     sh """
                         export KUBECONFIG=$KUBECONFIG_FILE
-                        kubectl apply -f $DEPLOYMENT_FILE
+                        kubectl apply -f ${env.DEPLOYMENT_FILE}
                     """
                 }
             }
         }
     }
 
+    // Set pipeline post action (always, success, failure)
     post {
         always {
-            echo 'Pipeline completed'
+            echo 'Pipeline completed. Finalizing run details.'
         }
         success {
-            echo 'Pipeline succeeded'
+            echo '✅ Deployment Pipeline SUCCEEDED.'
         }
         failure {
-            echo 'Pipeline failed'
+            echo '❌ Deployment Pipeline FAILED. Review logs for errors.'
         }
     }
 }
-
