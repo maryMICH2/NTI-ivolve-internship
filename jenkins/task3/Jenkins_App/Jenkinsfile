@@ -4,8 +4,7 @@ pipeline {
     environment {
         // --- Application Path ---
         // Path relative to the workspace root where the source code and Dockerfile are located.
-        APP_DIR = 'jenkins/task3/Jenkins_App/src/main/java/com/example
-/demo/DemoApplication.java'
+        APP_DIR = 'jenkins/task3/Jenkins_App/src/main/java/com/example/demo/DemoApplication.java'
 
         // --- Credentials and File Paths ---
         DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'
