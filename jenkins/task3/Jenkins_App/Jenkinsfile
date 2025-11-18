@@ -62,10 +62,10 @@ pipeline {
         // Stage 6: Update deployment.yaml with new image tag
         stage('Update Deployment Image') {
             steps {
-                sh '''
+                sh """
                     sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${JD_IMAGE}|g" jenkins/task3/Jenkins_App/k8s/deployment.yaml
                     echo "Updated deployment.yaml to use image ${JD_IMAGE}"
-                '''
+                """
             }
         }
 
