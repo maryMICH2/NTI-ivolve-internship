@@ -2,8 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('Docker-Hub-Credentials')
-        KUBECONFIG = 'jenkins-sa-kubeconfig.yaml'
+        DOCKER_CREDENTIALS_ID = 'Docker-Hub-Credentials'           
+        KUBE_CONFIG_CREDENTIAL_ID = 'jenkins-sa-credential' 
+        DOCKER_IMAGE = 'maaryii/test-image:latest'
+        DEPLOYMENT_FILE = 'k8s/deployment.yaml'
     }
 
     stages {
@@ -15,34 +17,55 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                sh 'npm install && npm test'
+                sh 'npm install'
+                sh 'npm test'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t maaryii/test-image:latest .'
+                script {
+                    docker.build(DOCKER_IMAGE)
+                }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
-                sh 'docker push maaryii/test-image:latest'
+                withCredentials([usernamePassword(credentialsId: env.DOCKER_CREDENTIALS_ID,
+                                                 usernameVariable: 'DOCKER_USER',
+                                                 passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $DOCKER_IMAGE
+                        docker rmi $DOCKER_IMAGE
+                    """
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl --kubeconfig=$KUBECONFIG apply -f deployment.yaml'
+                withCredentials([file(credentialsId: env.KUBE_CONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG_FILE')]) {
+                    sh """
+                        export KUBECONFIG=$KUBECONFIG_FILE
+                        kubectl apply -f $DEPLOYMENT_FILE
+                    """
+                }
             }
         }
     }
 
     post {
-        always { echo 'Pipeline finished.' }
-        success { echo 'Pipeline succeeded!' }
-        failure { echo 'Pipeline failed!' }
+        always {
+            echo 'Pipeline completed'
+        }
+        success {
+            echo 'Pipeline succeeded'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
     }
 }
 
