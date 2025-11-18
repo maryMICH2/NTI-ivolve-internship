@@ -52,7 +52,10 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-credential', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
+                        set -x
+                        echo "Logging in to Docker Hub..."
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "Pushing image $JD_IMAGE"
                         docker push "$JD_IMAGE"
                     '''
                 }
@@ -63,8 +66,10 @@ pipeline {
         stage('Update Deployment Image') {
             steps {
                 sh """
-                    sed -i "s|image: ${REGISTRY}/${IMAGE_NAME}:.*|image: ${JD_IMAGE}|g" jenkins/task3/Jenkins_App/k8s/deployment.yaml
-                    echo "Updated deployment.yaml to use image ${JD_IMAGE}"
+                    # Replace any existing tag with build-${BUILD_NUMBER}
+                    sed -i "s|\\(image: ${REGISTRY}/${IMAGE_NAME}:\\).*|\\1build-${BUILD_NUMBER}|g" jenkins/task3/Jenkins_App/k8s/deployment.yaml
+                    echo "Updated deployment.yaml to use image ${REGISTRY}/${IMAGE_NAME}:build-${BUILD_NUMBER}"
+                    cat jenkins/task3/Jenkins_App/k8s/deployment.yaml
                 """
             }
         }
@@ -74,6 +79,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'jenkins-sa-credential', variable: 'KUBECONFIG_FILE')]) {
                     sh '''
+                        # Apply deployment to Kubernetes using kubeconfig
                         KUBECONFIG="$KUBECONFIG_FILE" kubectl apply -f jenkins/task3/Jenkins_App/k8s/deployment.yaml
                     '''
                 }
