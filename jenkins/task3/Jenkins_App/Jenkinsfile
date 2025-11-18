@@ -8,13 +8,6 @@ pipeline {
         DEPLOYMENT_FILE = 'k8s/deployment.yaml'
     }
 
-    stages {
-        stage('Clone Repo') {
-            steps {
-                git 'https://github.com/maryMICH2/NTI-ivolve-internship/tree/main/jenkins/task3/Jenkins_App'
-            }
-        }
-
         stage('Run Unit Tests') {
             steps {
                 sh 'npm install'
